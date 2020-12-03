@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using API.Data;
-using API.DTOs;
+using API.DTO;
 using API.Entities;
 using API.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -46,7 +46,8 @@ namespace API.Controllers
     [HttpPost("login")]
     public async Task<ActionResult<UserDto>> Login(LoginDto loginDto)
     {
-      var user = await _context.Users.SingleOrDefaultAsync(x => x.UserName == loginDto.Username);
+      string userNameFromLogin = loginDto.Username.ToLower();
+      var user = await _context.Users.SingleOrDefaultAsync(x => x.UserName == userNameFromLogin);
       if (user == null) return Unauthorized("Invalid username");
 
       using var hmac = new HMACSHA512(user.PasswordSalt);
