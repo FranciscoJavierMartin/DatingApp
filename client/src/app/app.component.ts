@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { USER_KEY_LOCALSTORAGE } from './constants/localStorage';
-import { User } from './models/user';
+import { IUser } from './models/user';
 import { AccountService } from './services/account.service';
 
 @Component({
@@ -24,7 +24,7 @@ export class AppComponent implements OnInit {
   setCurrentUser() {
     const userFromLocalStorage = localStorage.getItem(USER_KEY_LOCALSTORAGE);
     if (userFromLocalStorage) {
-      const user: User = JSON.parse(userFromLocalStorage);
+      const user: IUser = JSON.parse(userFromLocalStorage);
       this.accountService.setCurrentUser(user);
     }
   }

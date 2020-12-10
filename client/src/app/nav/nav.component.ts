@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { Observable } from 'rxjs';
 import { ILoginForm } from '../interfaces/common';
-import { User } from '../models/user';
+import { IUser } from '../models/user';
 import { AccountService } from '../services/account.service';
 
 @Component({
