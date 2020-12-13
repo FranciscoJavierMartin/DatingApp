@@ -40,4 +40,17 @@ export class MembersService {
       })
     );
   }
+
+  setMainPhoto(photoId: number): Observable<void> {
+    return this.http.put<void>(
+      `${this.baseUrlService}/set-main-photo/${photoId}`,
+      {}
+    );
+  }
+
+  deletePhoto(photoId: number) {
+    return this.http.delete<void>(
+      `${this.baseUrlService}/delete-photo/${photoId}`
+    );
+  }
 }
