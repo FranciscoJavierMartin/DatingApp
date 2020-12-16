@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { map, take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
+import { LikePredicate } from '../constants/custom-types';
 import { IMember } from '../models/member';
 import { PaginatedResult } from '../models/pagination';
 import { IUser } from '../models/user';
@@ -13,7 +14,8 @@ import { AccountService } from './account.service';
   providedIn: 'root',
 })
 export class MembersService {
-  baseUrlService = `${environment.apiUrl}users`;
+  baseUrlUserService = `${environment.apiUrl}users`;
+  baseUrlLikeService = `${environment.apiUrl}likes`;
   members: IMember[] = [];
   memberCache = new Map();
   user: IUser;
@@ -31,20 +33,20 @@ export class MembersService {
     });
   }
 
-  getUserParams() {
+  getUserParams(): UserParams {
     return this.userParams;
   }
 
-  setUserParams(params: UserParams) {
+  setUserParams(params: UserParams): void {
     this.userParams = params;
   }
 
-  resetUserParams() {
+  resetUserParams(): UserParams {
     this.userParams = new UserParams(this.user);
     return this.userParams;
   }
 
-  getMembers(userParams: UserParams) {
+  getMembers(userParams: UserParams): Observable<PaginatedResult<IMember[]>> {
     let res;
     let response = this.memberCache.get(Object.values(userParams).join('-'));
     if (response) {
@@ -61,7 +63,7 @@ export class MembersService {
       params = params.append('orderBy', userParams.orderBy);
 
       res = this.getPaginatedResult<IMember[]>(
-        this.baseUrlService,
+        this.baseUrlUserService,
         params
       ).pipe(
         map((response) => {
@@ -81,11 +83,11 @@ export class MembersService {
 
     return member
       ? of(member)
-      : this.http.get<IMember>(`${this.baseUrlService}/${username}`);
+      : this.http.get<IMember>(`${this.baseUrlUserService}/${username}`);
   }
 
   updateMember(member: IMember): Observable<void> {
-    return this.http.put<void>(this.baseUrlService, member).pipe(
+    return this.http.put<void>(this.baseUrlUserService, member).pipe(
       map(() => {
         const index = this.members.indexOf(member);
         this.members[index] = member;
@@ -95,15 +97,25 @@ export class MembersService {
 
   setMainPhoto(photoId: number): Observable<void> {
     return this.http.put<void>(
-      `${this.baseUrlService}/set-main-photo/${photoId}`,
+      `${this.baseUrlUserService}/set-main-photo/${photoId}`,
       {}
     );
   }
 
-  deletePhoto(photoId: number) {
+  deletePhoto(photoId: number): Observable<void> {
     return this.http.delete<void>(
-      `${this.baseUrlService}/delete-photo/${photoId}`
+      `${this.baseUrlUserService}/delete-photo/${photoId}`
     );
+  }
+
+  addLike(username: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrlLikeService}/${username}`, {});
+  }
+
+  getLikes(predicate: LikePredicate, pageNumber: number, pageSize: number) {
+    let params = this.getPaginationHeaders(pageNumber, pageSize);
+    params = params.append('predicate', predicate);
+    return this.getPaginatedResult<Partial<IMember[]>>(this.baseUrlLikeService, params);
   }
 
   private getPaginationHeaders(
@@ -118,7 +130,10 @@ export class MembersService {
     return params;
   }
 
-  private getPaginatedResult<T>(url: string, params: HttpParams) {
+  private getPaginatedResult<T>(
+    url: string,
+    params: HttpParams
+  ): Observable<PaginatedResult<T>> {
     const paginatedResult: PaginatedResult<T> = new PaginatedResult<T>();
     return this.http
       .get<T>(url, {
