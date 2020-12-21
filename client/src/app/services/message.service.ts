@@ -5,14 +5,53 @@ import { environment } from 'src/environments/environment';
 import { ContainerMessage } from '../constants/custom-types';
 import { IMessage } from '../models/message';
 import { getPaginatedResult, getPaginationHeaders } from './paginationHelper';
+import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
+import { IUser } from '../models/user';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { take } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root',
 })
 export class MessageService {
   baseUrlMessagesService = `${environment.apiUrl}messages`;
+  hubUrl = environment.hubUrl;
+  private hubConnection: HubConnection;
+  private messageThreadSource: BehaviorSubject<
+    IMessage[]
+  > = new BehaviorSubject<IMessage[]>([]);
+  messageThread$: Observable<
+    IMessage[]
+  > = this.messageThreadSource.asObservable();
 
   constructor(private http: HttpClient) {}
+
+  createHubConnection(user: IUser, otherUsername: string) {
+    this.hubConnection = new HubConnectionBuilder()
+      .withUrl(`${this.hubUrl}message?user=${otherUsername}`, {
+        accessTokenFactory: () => user.token,
+      })
+      .withAutomaticReconnect()
+      .build();
+
+    this.hubConnection.start().catch((error) => console.log(error));
+
+    this.hubConnection.on('ReceiveMessageThread', (messages: IMessage[]) => {
+      this.messageThreadSource.next(messages);
+    });
+
+    this.hubConnection.on('NewMessage', (message: IMessage) => {
+      this.messageThread$.pipe(take(1)).subscribe((messages: IMessage[]) => {
+        this.messageThreadSource.next([...messages, message]);
+      });
+    });
+  }
+
+  stopHubConnection() {
+    if (this.hubConnection) {
+      this.hubConnection.stop();
+    }
+  }
 
   getMessages(
     pageNumber: number,
@@ -34,14 +73,13 @@ export class MessageService {
     );
   }
 
-  sendMessage(username: string, content: string) {
-    return this.http.post<IMessage>(this.baseUrlMessagesService, {
-      recipientUsername: username,
-      content,
-    });
+  async sendMessage(username: string, content: string) {
+    return this.hubConnection
+      .invoke('SendMessage', { recipientUsername: username, content })
+      .catch((error) => console.log(error));
   }
 
-  deleteMessage(id: number){
+  deleteMessage(id: number) {
     return this.http.delete(`${this.baseUrlMessagesService}/${id}`);
   }
 }
