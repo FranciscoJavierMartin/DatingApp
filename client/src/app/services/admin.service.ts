@@ -41,7 +41,7 @@ export class AdminService {
 
   rejectPhoto(photoId: number): Observable<void> {
     return this.http.post<void>(
-      `${this.baseUrlAdminService}/reject-photo/${photoId}`,
+      `${this.baseUrlAdminService}reject-photo/${photoId}`,
       {}
     );
   }
