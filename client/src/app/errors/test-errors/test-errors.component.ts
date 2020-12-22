@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
-import { baseUrl } from 'src/app/constants/urls';
+import { environment } from 'src/environments/environment';
+
 
 @Component({
   selector: 'app-test-errors',
@@ -8,7 +9,7 @@ import { baseUrl } from 'src/app/constants/urls';
   styleUrls: ['./test-errors.component.scss'],
 })
 export class TestErrorsComponent implements OnInit {
-  baseUrlBuggy: string = `${baseUrl}buggy/`;
+  baseUrlBuggy: string = `${environment.apiUrl}buggy/`;
   validationErrors: string[] = [];
 
   constructor(private http: HttpClient) {}
@@ -61,7 +62,7 @@ export class TestErrorsComponent implements OnInit {
 
   get400ValidationError() {
     this.http
-      .post(`${baseUrl}account/register`, {
+      .post(`${environment.apiUrl}account/register`, {
         username: '',
         password: '',
       })
